@@ -3,7 +3,7 @@ package amqputils
 import "github.com/streadway/amqp"
 
 // SubscribeFunc function to handle an incoming message
-type SubscribeFunc func(amqp.Delivery) (bool, []byte)
+type SubscribeFunc func(amqp.Delivery) []byte
 
 // Connect to amqp server
 func Connect(url, queueName string) (*amqp.Channel, *amqp.Queue, func(), error) {
@@ -54,8 +54,8 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 	}
 
 	for d := range msgs {
-		send, msg := do(d)
-		if send == true {
+		msg := do(d)
+		if msg != nil {
 			ch.Publish(
 				"",        // exchange
 				d.ReplyTo, // routing key

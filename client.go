@@ -46,11 +46,11 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 	}
 
 	resp := make(chan []byte)
-	go Subscribe(ch, &qRec, func(d amqp.Delivery) (bool, []byte) {
+	go Subscribe(ch, &qRec, func(d amqp.Delivery) []byte {
 		if corrId == d.CorrelationId {
 			resp <- d.Body
 		}
-		return false, nil
+		return nil
 	})
 
 	select {
