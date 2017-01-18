@@ -2,8 +2,11 @@ package amqputils
 
 import "github.com/streadway/amqp"
 
+// SubscribeFunc function to handle an incoming message
+type SubscribeFunc func(amqp.Delivery) (bool, []byte)
+
 // Connect to amqp server
-func Connect(url string, queueName string) (*amqp.Channel, *amqp.Queue, func(), error) {
+func Connect(url, queueName string) (*amqp.Channel, *amqp.Queue, func(), error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, nil, nil, err
@@ -35,7 +38,8 @@ func Connect(url string, queueName string) (*amqp.Channel, *amqp.Queue, func(), 
 	return ch, &q, close, nil
 }
 
-func Subscribe(ch *amqp.Channel, q *amqp.Queue, do func(*amqp.Channel, amqp.Delivery)) error {
+// Subscribe to a queue and handle the messages
+func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
@@ -50,7 +54,19 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do func(*amqp.Channel, amqp.Deli
 	}
 
 	for d := range msgs {
-		go do(ch, d)
+		send, msg := do(d)
+		if send == true {
+			ch.Publish(
+				"",        // exchange
+				d.ReplyTo, // routing key
+				false,     // mandatory
+				false,     // immediate
+				amqp.Publishing{
+					ContentType:   "application/json",
+					CorrelationId: d.CorrelationId,
+					Body:          msg,
+				})
+		}
 	}
 	return nil
 }

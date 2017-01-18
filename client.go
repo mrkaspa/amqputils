@@ -2,11 +2,13 @@ package amqputils
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/streadway/amqp"
 )
 
-func Call(url string, queueName string, info []byte) ([]byte, error) {
+// Call a queue and receives the response
+func Call(url, queueName string, info []byte) ([]byte, error) {
 	ch, q, close, err := Connect(url, queueName)
 	defer close()
 	if err != nil {
@@ -44,19 +46,23 @@ func Call(url string, queueName string, info []byte) ([]byte, error) {
 	}
 
 	resp := make(chan []byte)
-	go Subscribe(ch, &qRec, func(ch *amqp.Channel, d amqp.Delivery) {
+	go Subscribe(ch, &qRec, func(d amqp.Delivery) (bool, []byte) {
 		if corrId == d.CorrelationId {
 			resp <- d.Body
 		}
+		return false, nil
 	})
-	return <-resp, nil
+
+	select {
+	case data := <-resp:
+		return data, nil
+	case <-time.NewTimer(5 * time.Second).C:
+		return nil, ErrTimeout
+	}
 }
 
-func Publish(url string, queueName string, info []byte) error {
-	return PublishWithCorrelation(url, queueName, "", info)
-}
-
-func PublishWithCorrelation(url string, queueName string, corrId string, info []byte) error {
+// Publish in a queue
+func Publish(url, queueName string, info []byte) error {
 	ch, q, close, err := Connect(url, queueName)
 	defer close()
 	if err != nil {
@@ -69,10 +75,9 @@ func PublishWithCorrelation(url string, queueName string, corrId string, info []
 		false,  // mandatory
 		false,
 		amqp.Publishing{
-			DeliveryMode:  amqp.Persistent,
-			ContentType:   "application/json",
-			Body:          info,
-			CorrelationId: corrId,
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "application/json",
+			Body:         info,
 		})
 	if err != nil {
 		return err
