@@ -55,7 +55,7 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 
 	for d := range msgs {
 		msg := do(d)
-		if msg != nil {
+		if msg != nil && d.ReplyTo != "" && d.CorrelationId != "" {
 			ch.Publish(
 				"",        // exchange
 				d.ReplyTo, // routing key
