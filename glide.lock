@@ -1,6 +1,18 @@
-hash: 1d91b56cc5e09b0a5c099834828d43aaff049475538956ae4fec034d203f8717
-updated: 2017-01-17T12:33:21.540082512-05:00
+hash: feff9d3d8e5197977a6fc60e7b9864205141005f567631c21e0b932dd8d85a49
+updated: 2017-04-17T09:47:22.497463878-05:00
 imports:
 - name: github.com/streadway/amqp
   version: 63795daa9a446c920826655f26ba31c81c860fd6
-testImports: []
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
