@@ -28,7 +28,7 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	corrId := randomString(32)
+	corrID := randomString(32)
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -37,7 +37,7 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 		amqp.Publishing{
 			DeliveryMode:  amqp.Persistent,
 			ContentType:   "application/json",
-			CorrelationId: corrId,
+			CorrelationId: corrID,
 			ReplyTo:       qRec.Name,
 			Body:          info,
 		})
@@ -47,7 +47,7 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 
 	resp := make(chan []byte)
 	go Subscribe(ch, &qRec, func(d amqp.Delivery) []byte {
-		if corrId == d.CorrelationId {
+		if corrID == d.CorrelationId {
 			resp <- d.Body
 		}
 		return nil

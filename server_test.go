@@ -36,3 +36,12 @@ func TestServer_Stop(t *testing.T) {
 	_, err := Call(server.URL, server.Event, []byte("xxx"))
 	assert.NotNil(t, err)
 }
+
+func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
+	server, _ := NewServer("amqp://guest:guest@localhost", "norespond", func(d amqp.Delivery) []byte {
+		return nil //it doesn't respond when return nil
+	})
+	go server.Start()
+	_, err := Call(server.URL, server.Event, []byte("xxx"))
+	assert.NotNil(t, err)
+}
