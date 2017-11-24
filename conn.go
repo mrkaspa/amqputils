@@ -5,18 +5,27 @@ import "github.com/streadway/amqp"
 // SubscribeFunc function to handle an incoming message
 type SubscribeFunc func(amqp.Delivery) []byte
 
-// Connect to amqp server
-func Connect(url, queueName string) (*amqp.Channel, *amqp.Queue, func(), error) {
+// CreateConnection channel and its respective close function
+func CreateConnection(url string) (*amqp.Channel, func(), error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
+	close := func() {
+		conn.Close()
+		ch.Close()
+	}
+	return ch, close, nil
+}
+
+// CreateQueue in the amqp server
+func CreateQueue(ch *amqp.Channel, queueName string) (*amqp.Queue, error) {
 	q, err := ch.QueueDeclare(
 		queueName, // name
 		true,      // durable
@@ -27,15 +36,10 @@ func Connect(url, queueName string) (*amqp.Channel, *amqp.Queue, func(), error) 
 	)
 
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	close := func() {
-		conn.Close()
-		ch.Close()
-	}
-
-	return ch, &q, close, nil
+	return &q, nil
 }
 
 // Subscribe to a queue and handle the messages

@@ -9,8 +9,13 @@ import (
 
 // Call a queue and receives the response
 func Call(url, queueName string, info []byte) ([]byte, error) {
-	ch, q, close, err := Connect(url, queueName)
+	ch, close, err := CreateConnection(url)
+	if err != nil {
+		return nil, err
+	}
 	defer close()
+
+	q, err := CreateQueue(ch, queueName)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +68,13 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 
 // Publish in a queue
 func Publish(url, queueName string, info []byte) error {
-	ch, q, close, err := Connect(url, queueName)
+	ch, close, err := CreateConnection(url)
+	if err != nil {
+		return err
+	}
 	defer close()
+
+	q, err := CreateQueue(ch, queueName)
 	if err != nil {
 		return err
 	}

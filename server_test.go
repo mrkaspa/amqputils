@@ -7,41 +7,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createServerTest() (*Server, error) {
-	return NewServer("amqp://guest:guest@localhost", "demo", func(d amqp.Delivery) []byte {
-		return []byte("xxx")
+const connString = "amqp://guest:guest@localhost"
+
+func createServerTest(queue string, response []byte) (*Server, func(), error) {
+	ch, close, err := CreateConnection(connString)
+	if err != nil {
+		return nil, nil, err
+	}
+	server, err := NewServer(ch, queue, func(d amqp.Delivery) []byte {
+		return response
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return server, close, nil
 }
 
 func TestNewServer(t *testing.T) {
-	server, err := createServerTest()
-	assert.Nil(t, err)
+	server, close, err := createServerTest("demo", []byte("xxx"))
+	defer close()
+	assert.NoError(t, err)
 	assert.NotNil(t, server)
 }
 
 func TestServer_Start(t *testing.T) {
-	server, _ := createServerTest()
+	server, close, _ := createServerTest("demo", []byte("xxx"))
+	defer close()
 	go server.Start()
-	resp, err := Call(server.URL, server.Event, []byte("xxx"))
+	resp, err := Call(connString, server.Event, []byte("xxx"))
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
 
-func TestServer_Stop(t *testing.T) {
-	server, _ := NewServer("amqp://guest:guest@localhost", "stop", func(d amqp.Delivery) []byte {
-		return []byte("xxx")
-	})
-	go server.Start()
-	server.Stop()
-	_, err := Call(server.URL, server.Event, []byte("xxx"))
-	assert.NotNil(t, err)
-}
-
 func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
-	server, _ := NewServer("amqp://guest:guest@localhost", "norespond", func(d amqp.Delivery) []byte {
-		return nil //it doesn't respond when return nil
-	})
+	server, close, _ := createServerTest("demo", nil)
+	defer close()
 	go server.Start()
-	_, err := Call(server.URL, server.Event, []byte("xxx"))
+	_, err := Call(connString, server.Event, []byte("xxx"))
 	assert.NotNil(t, err)
 }

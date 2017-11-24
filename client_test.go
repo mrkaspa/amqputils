@@ -8,24 +8,30 @@ import (
 )
 
 func TestPublish(t *testing.T) {
-	ch, q, close, _ := Connect("amqp://guest:guest@localhost", "demo")
+	ch, close, err := CreateConnection("amqp://guest:guest@localhost")
 	defer close()
+	assert.NoError(t, err)
+	q, err := CreateQueue(ch, "demo")
+	assert.NoError(t, err)
 	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
 		return nil
 	})
-	err := Publish("amqp://guest:guest@localhost", "demo", []byte("xxx"))
-	assert.Nil(t, err)
+	err = Publish("amqp://guest:guest@localhost", "demo", []byte("xxx"))
+	assert.NoError(t, err)
 }
 
 func TestCall(t *testing.T) {
-	ch, q, close, _ := Connect("amqp://guest:guest@localhost", "echo")
+	ch, close, err := CreateConnection("amqp://guest:guest@localhost")
 	defer close()
+	assert.NoError(t, err)
+	q, err := CreateQueue(ch, "echo")
+	assert.NoError(t, err)
 	msg := []byte("xxx")
 	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
 		return d.Body
 	})
 	resp, err := Call("amqp://guest:guest@localhost", "echo", msg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, resp)
 	assert.Equal(t, resp, msg)
 }
