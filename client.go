@@ -14,7 +14,11 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 		return nil, err
 	}
 	defer close()
+	return CallWithConn(ch, url, queueName, info)
+}
 
+// CallWithConn a queue and receives the response
+func CallWithConn(ch *amqp.Channel, url, queueName string, info []byte) ([]byte, error) {
 	q, err := CreateQueue(ch, queueName)
 	if err != nil {
 		return nil, err
@@ -73,7 +77,11 @@ func Publish(url, queueName string, info []byte) error {
 		return err
 	}
 	defer close()
+	return PublishWithConn(ch, url, queueName, info)
+}
 
+// PublishWithConn in a queue
+func PublishWithConn(ch *amqp.Channel, url, queueName string, info []byte) error {
 	q, err := CreateQueue(ch, queueName)
 	if err != nil {
 		return err
