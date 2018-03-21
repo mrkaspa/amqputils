@@ -19,9 +19,38 @@ func Call(url, queueName string, info []byte) ([]byte, error) {
 
 // CallWithConn a queue and receives the response
 func CallWithConn(ch *amqp.Channel, queueName string, info []byte) ([]byte, error) {
+	resp := make(chan []byte)
+	CallWithConnAsync(ch, queueName, info, resp)
+
+	select {
+	case data := <-resp:
+		return data, nil
+	case <-time.NewTimer(5 * time.Second).C:
+		return nil, ErrTimeout
+	}
+}
+
+// CallWithConnAsync a queue and receives the response in a channel
+func CallWithConnAsync(ch *amqp.Channel, queueName string, info []byte, resp chan []byte) error {
+	qRec, corrID, err := call(ch, queueName, info)
+	if err != nil {
+		return err
+	}
+
+	go Subscribe(ch, qRec, func(d amqp.Delivery) []byte {
+		if corrID == d.CorrelationId {
+			resp <- d.Body
+		}
+		return nil
+	})
+
+	return nil
+}
+
+func call(ch *amqp.Channel, queueName string, info []byte) (*amqp.Queue, string, error) {
 	q, err := CreateQueue(ch, queueName)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	qRec, err := ch.QueueDeclare(
@@ -34,7 +63,7 @@ func CallWithConn(ch *amqp.Channel, queueName string, info []byte) ([]byte, erro
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	corrID := randomString(32)
@@ -51,23 +80,9 @@ func CallWithConn(ch *amqp.Channel, queueName string, info []byte) ([]byte, erro
 			Body:          info,
 		})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-
-	resp := make(chan []byte)
-	go Subscribe(ch, &qRec, func(d amqp.Delivery) []byte {
-		if corrID == d.CorrelationId {
-			resp <- d.Body
-		}
-		return nil
-	})
-
-	select {
-	case data := <-resp:
-		return data, nil
-	case <-time.NewTimer(5 * time.Second).C:
-		return nil, ErrTimeout
-	}
+	return &qRec, corrID, nil
 }
 
 // Publish in a queue
