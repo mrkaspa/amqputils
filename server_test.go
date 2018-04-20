@@ -14,7 +14,7 @@ func createServerTest(queue string, response []byte) (*Server, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	server, err := NewServer(ch, queue, func(d amqp.Delivery) []byte {
+	server, err := NewServer("v.1.0", ch, queue, func(d amqp.Delivery) []byte {
 		return response
 	})
 	if err != nil {
@@ -43,6 +43,7 @@ func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
 	server, close, _ := createServerTest("demo", nil)
 	defer close()
 	go server.Start()
-	_, err := Call(connString, server.Event, []byte("xxx"))
-	assert.NotNil(t, err)
+	msg, err := Call(connString, server.Event, []byte("xxx"))
+	assert.Nil(t, err)
+	assert.True(t, string(msg) == "invalid message version, expecting version v.1.0")
 }

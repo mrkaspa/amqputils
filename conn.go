@@ -1,6 +1,8 @@
 package amqputils
 
-import "github.com/streadway/amqp"
+import (
+	"github.com/streadway/amqp"
+)
 
 // SubscribeFunc function to handle an incoming message
 type SubscribeFunc func(amqp.Delivery) []byte
@@ -54,11 +56,12 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 		nil,    // args
 	)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	for d := range msgs {
 		msg := do(d)
+
 		if msg != nil && d.ReplyTo != "" && d.CorrelationId != "" {
 			ch.Publish(
 				"",        // exchange

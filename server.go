@@ -1,6 +1,8 @@
 package amqputils
 
-import "github.com/streadway/amqp"
+import (
+	"github.com/streadway/amqp"
+)
 
 // Server for receiving amqp messages
 type Server struct {
@@ -18,6 +20,7 @@ func NewServer(version string, ch *amqp.Channel, event string, do SubscribeFunc)
 		return nil, err
 	}
 	return &Server{
+		Version:   version,
 		Event:     event,
 		Do:        do,
 		AMQPChan:  ch,
@@ -28,8 +31,11 @@ func NewServer(version string, ch *amqp.Channel, event string, do SubscribeFunc)
 // Start the server
 func (s *Server) Start() {
 	f := func(delivery amqp.Delivery) []byte {
-		// aqui hago la validacion
-		return s.Do(delivery)
+		if s.Version == delivery.AppId {
+			return s.Do(delivery)
+		} else {
+			return []byte("invalid message version, expecting version " + s.Version)
+		}
 	}
 	Subscribe(s.AMQPChan, s.AMQPQueue, f)
 }
