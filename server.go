@@ -4,6 +4,7 @@ import "github.com/streadway/amqp"
 
 // Server for receiving amqp messages
 type Server struct {
+	Version   string
 	Event     string
 	Do        SubscribeFunc
 	AMQPChan  *amqp.Channel
@@ -11,7 +12,7 @@ type Server struct {
 }
 
 // NewServer creates one
-func NewServer(ch *amqp.Channel, event string, do SubscribeFunc) (*Server, error) {
+func NewServer(version string, ch *amqp.Channel, event string, do SubscribeFunc) (*Server, error) {
 	q, err := CreateQueue(ch, event)
 	if err != nil {
 		return nil, err
@@ -26,5 +27,9 @@ func NewServer(ch *amqp.Channel, event string, do SubscribeFunc) (*Server, error
 
 // Start the server
 func (s *Server) Start() {
-	Subscribe(s.AMQPChan, s.AMQPQueue, s.Do)
+	f := func(delivery amqp.Delivery) []byte {
+		// aqui hago la validacion
+		return s.Do(delivery)
+	}
+	Subscribe(s.AMQPChan, s.AMQPQueue, f)
 }
