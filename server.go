@@ -34,7 +34,8 @@ func (s *Server) Start() {
 		if s.Version == delivery.AppId {
 			return s.Do(delivery)
 		} else {
-			return []byte("invalid message version, expecting version " + s.Version)
+			msg := "{\"error\":\"invalid message version, expecting version " + s.Version + "\"}"
+			return []byte(msg)
 		}
 	}
 	Subscribe(s.AMQPChan, s.AMQPQueue, f)

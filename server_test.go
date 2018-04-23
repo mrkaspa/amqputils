@@ -45,5 +45,7 @@ func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
 	go server.Start()
 	msg, err := Call(connString, server.Event, []byte("xxx"))
 	assert.Nil(t, err)
-	assert.True(t, string(msg) == "invalid message version, expecting version v.1.0")
+
+	m := "{\"error\":\"invalid message version, expecting version v.1.0\"}"
+	assert.True(t, string(msg) == m)
 }
