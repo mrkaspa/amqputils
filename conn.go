@@ -72,6 +72,7 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 					ContentType:   "application/json",
 					CorrelationId: d.CorrelationId,
 					Body:          msg,
+					AppId:         d.AppId,
 				})
 		}
 	}

@@ -16,7 +16,7 @@ func TestPublish(t *testing.T) {
 	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
 		return nil
 	})
-	err = Publish("amqp://guest:guest@localhost", "demo", []byte("xxx"))
+	err = Publish("amqp://guest:guest@localhost", "demo", "v1.0", []byte("xxx"))
 	assert.NoError(t, err)
 }
 
@@ -30,7 +30,7 @@ func TestCall(t *testing.T) {
 	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
 		return d.Body
 	})
-	resp, err := Call("amqp://guest:guest@localhost", "echo", msg)
+	resp, err := Call("amqp://guest:guest@localhost", "echo", "v1.0", msg)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp)
 	assert.Equal(t, resp, msg)

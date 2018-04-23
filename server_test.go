@@ -14,12 +14,14 @@ func createServerTest(queue string, response []byte) (*Server, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	server, err := NewServer("v.1.0", ch, queue, func(d amqp.Delivery) []byte {
+	server, err := NewServer("v1.0", ch, queue, func(d amqp.Delivery) []byte {
 		return response
 	})
+
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return server, close, nil
 }
 
@@ -31,10 +33,11 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestServer_Start(t *testing.T) {
-	server, close, _ := createServerTest("demo", []byte("xxx"))
+	msg := []byte("xxx")
+	server, close, _ := createServerTest("demo", msg)
 	defer close()
 	go server.Start()
-	resp, err := Call(connString, server.Event, []byte("xxx"))
+	resp, err := Call(connString, server.Event, "v1.0", msg)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
@@ -43,9 +46,6 @@ func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
 	server, close, _ := createServerTest("demo", nil)
 	defer close()
 	go server.Start()
-	msg, err := Call(connString, server.Event, []byte("xxx"))
-	assert.Nil(t, err)
-
-	m := "{\"error\":\"invalid message version, expecting version v.1.0\"}"
-	assert.True(t, string(msg) == m)
+	_, err := Call(connString, server.Event, "v1.0", []byte("xxx"))
+	assert.NotNil(t, err)
 }
