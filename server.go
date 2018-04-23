@@ -32,7 +32,7 @@ func NewServer(version string, ch *amqp.Channel, event string, do SubscribeFunc)
 func (s *Server) Start() {
 	f := func(delivery amqp.Delivery) []byte {
 		if s.Version != delivery.AppId {
-			delivery.Body = []byte("{\"error\":\"invalid message version, expecting version " + s.Version + "\"}")
+			delivery.Body = []byte("{\"error\":\"invalid message version, expecting " + s.Version + "\"}")
 		}
 		return s.Do(delivery)
 	}
