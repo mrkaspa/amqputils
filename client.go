@@ -1,6 +1,7 @@
 package amqputils
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -67,7 +68,7 @@ func call(ch *amqp.Channel, queueName string, msgVer string, info []byte) (*amqp
 	}
 
 	corrID := randomString(32)
-
+	fmt.Printf("Version in %s\n", msgVer)
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
