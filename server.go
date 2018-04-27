@@ -35,7 +35,6 @@ func NewServer(version string, ch *amqp.Channel, event string, do SubscribeFunc,
 // Start the server
 func (s *Server) Start() {
 	f := func(delivery amqp.Delivery) []byte {
-		// fmt.Printf("msg \n%#v\n", delivery)
 		if ok, data := s.CompareVersion(s.Version, delivery.AppId); !ok {
 			return data
 		}
