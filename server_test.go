@@ -21,7 +21,7 @@ func createServerTest(queue string, response []byte) (*Server, func(), error) {
 		},
 		func(v1, v2 string) (bool, []byte) {
 			if v1 != v2 {
-				log.Printf("Version error %s %s", v1, v2)
+				log.Printf("Version error. Expecting %s, received %s", v1, v2)
 				return false, []byte("{\"error\":\"invalid message version, expecting " + v1 + "\"}")
 			}
 			return true, nil

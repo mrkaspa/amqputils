@@ -28,9 +28,18 @@ func CreateConnection(url string) (*amqp.Channel, func(), error) {
 
 // CreateQueue in the amqp server
 func CreateQueue(ch *amqp.Channel, queueName string) (*amqp.Queue, error) {
+	return declareQueue(ch, queueName, true)
+}
+
+// CreateQueue in the amqp server not durable
+func CreateQueueNotDurable(ch *amqp.Channel, queueName string) (*amqp.Queue, error) {
+	return declareQueue(ch, queueName, false)
+}
+
+func declareQueue(ch *amqp.Channel, queueName string, durable bool) (*amqp.Queue, error) {
 	q, err := ch.QueueDeclare(
 		queueName, // name
-		true,      // durable
+		durable,   // durable
 		false,     // delete when unused
 		false,     // exclusive
 		false,     // no-wait
