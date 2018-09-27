@@ -11,7 +11,7 @@ import (
 const connString = "amqp://guest:guest@localhost"
 
 func createServerTest(queue string, response []byte) (*Server, func(), error) {
-	ch, close, err := CreateConnection(connString)
+	ch, close, err := CreateChannelConnection(connString)
 	if err != nil {
 		return nil, nil, err
 	}

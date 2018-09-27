@@ -13,19 +13,19 @@ func TestConnect(t *testing.T) {
 }
 
 func whenConnectIsValid(t *testing.T) {
-	ch, close, err := CreateConnection("amqp://guest:guest@localhost")
+	ch, close, err := CreateChannelConnection("amqp://guest:guest@localhost")
 	defer close()
 	assert.NoError(t, err)
 	assert.NotNil(t, ch)
 }
 
 func whenConnectIsInvalid(t *testing.T) {
-	_, _, err := CreateConnection("amqp://guest:xxxx@localhost")
+	_, _, err := CreateChannelConnection("amqp://guest:xxxx@localhost")
 	assert.Error(t, err)
 }
 
 func TestSubscribe(t *testing.T) {
-	ch, close, _ := CreateConnection("amqp://guest:guest@localhost")
+	ch, close, _ := CreateChannelConnection("amqp://guest:guest@localhost")
 	defer close()
 	q, _ := CreateQueue(ch, "demo")
 	resp := make(chan []byte)
