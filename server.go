@@ -40,8 +40,8 @@ func HealtCheck(ch *amqp.Channel, queueService string) (*Server, error) {
 	}
 	return &Server{
 		Event: queueService,
-		Do: func(m amqp.Delivery) []byte {
-			return []byte(queueService + " active ")
+		Do: func(m amqp.Delivery) ([]byte, error) {
+			return []byte(queueService + " active "), nil
 		},
 		AMQPChan:       ch,
 		AMQPQueue:      q,
@@ -51,10 +51,11 @@ func HealtCheck(ch *amqp.Channel, queueService string) (*Server, error) {
 
 // Start the server
 func (s *Server) Start() {
-	f := func(delivery amqp.Delivery) []byte {
+	f := func(delivery amqp.Delivery) ([]byte, error) {
 		if ok, data := s.CompareVersion(s.Version, delivery.AppId); !ok {
-			return data
+			return data, nil
 		}
+
 		return s.Do(delivery)
 	}
 	Subscribe(s.AMQPChan, s.AMQPQueue, f)

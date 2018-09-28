@@ -11,13 +11,13 @@ import (
 const connString = "amqp://guest:guest@localhost"
 
 func createServerTest(queue string, response []byte) (*Server, func(), error) {
-	ch, close, err := CreateConnection(connString)
+	ch, close, err := CreateChannelConnection(connString)
 	if err != nil {
 		return nil, nil, err
 	}
 	server, err := NewServer("v1.0", ch, queue,
-		func(d amqp.Delivery) []byte {
-			return response
+		func(d amqp.Delivery) ([]byte, error) {
+			return response, nil
 		},
 		func(v1, v2 string) (bool, []byte) {
 			if v1 != v2 {

@@ -10,7 +10,7 @@ import (
 
 // Call a queue and receives the response
 func Call(url, queueName string, msgVer string, info []byte) ([]byte, error) {
-	ch, close, err := CreateConnection(url)
+	ch, close, err := CreateChannelConnection(url)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +38,11 @@ func CallWithConnAsync(ch *amqp.Channel, queueName string, msgVer string, info [
 		return err
 	}
 
-	go Subscribe(ch, qRec, func(d amqp.Delivery) []byte {
+	go Subscribe(ch, qRec, func(d amqp.Delivery) ([]byte, error) {
 		if corrID == d.CorrelationId {
 			resp <- d.Body
 		}
-		return nil
+		return nil, nil
 	})
 
 	return nil
@@ -90,7 +90,7 @@ func call(ch *amqp.Channel, queueName string, msgVer string, info []byte) (*amqp
 
 // Publish in a queue
 func Publish(url, queueName string, msgVer string, info []byte) error {
-	ch, close, err := CreateConnection(url)
+	ch, close, err := CreateChannelConnection(url)
 	if err != nil {
 		return err
 	}
