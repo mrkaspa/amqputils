@@ -7,23 +7,29 @@ import (
 // SubscribeFunc function to handle an incoming message
 type SubscribeFunc func(amqp.Delivery) []byte
 
-// CreateConnection channel and its respective close function
-func CreateConnection(url string) (*amqp.Channel, func(), error) {
+// CreateConnection connection - channel and its respective close function
+func CreateConnection(url string) (*amqp.Connection, *amqp.Channel, func(), error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	close := func() {
 		conn.Close()
 		ch.Close()
 	}
-	return ch, close, nil
+	return conn, ch, close, nil
+}
+
+// CreateChannelConnection channel and its respective close function
+func CreateChannelConnection(url string) (*amqp.Channel, func(), error) {
+	_, ch, close, err := CreateConnection(url)
+	return ch, close, err
 }
 
 // CreateQueue in the amqp server

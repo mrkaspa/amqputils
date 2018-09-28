@@ -8,7 +8,7 @@ import (
 )
 
 func TestPublish(t *testing.T) {
-	ch, close, err := CreateConnection("amqp://guest:guest@localhost")
+	ch, close, err := CreateChannelConnection("amqp://guest:guest@localhost")
 	defer close()
 	assert.NoError(t, err)
 	q, err := CreateQueue(ch, "demo")
@@ -21,7 +21,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestCall(t *testing.T) {
-	ch, close, err := CreateConnection("amqp://guest:guest@localhost")
+	ch, close, err := CreateChannelConnection("amqp://guest:guest@localhost")
 	defer close()
 	assert.NoError(t, err)
 	q, err := CreateQueue(ch, "echo")
