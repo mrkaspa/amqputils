@@ -38,11 +38,11 @@ func CallWithConnAsync(ch *amqp.Channel, queueName string, msgVer string, info [
 		return err
 	}
 
-	go Subscribe(ch, qRec, func(d amqp.Delivery) []byte {
+	go Subscribe(ch, qRec, func(d amqp.Delivery) ([]byte, error) {
 		if corrID == d.CorrelationId {
 			resp <- d.Body
 		}
-		return nil
+		return nil, nil
 	})
 
 	return nil

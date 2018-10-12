@@ -1,11 +1,13 @@
 package amqputils
 
 import (
+	"log"
+
 	"github.com/streadway/amqp"
 )
 
 // SubscribeFunc function to handle an incoming message
-type SubscribeFunc func(amqp.Delivery) []byte
+type SubscribeFunc func(amqp.Delivery) ([]byte, error)
 
 // CreateConnection connection - channel and its respective close function
 func CreateConnection(url string) (*amqp.Connection, *amqp.Channel, func(), error) {
@@ -75,7 +77,13 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 	}
 
 	for d := range msgs {
-		msg := do(d)
+		msg, err := do(d)
+
+		if err != nil {
+			log.Printf("AMQPUTILS, an error has occurred: %v", err.Error())
+			continue
+		}
+
 		d.Ack(false)
 
 		if msg != nil && d.ReplyTo != "" && d.CorrelationId != "" {

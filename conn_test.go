@@ -29,9 +29,9 @@ func TestSubscribe(t *testing.T) {
 	defer close()
 	q, _ := CreateQueue(ch, "demo")
 	resp := make(chan []byte)
-	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
+	go Subscribe(ch, q, func(d amqp.Delivery) ([]byte, error) {
 		resp <- d.Body
-		return nil
+		return nil, nil
 	})
 	err := Publish("amqp://guest:guest@localhost", "demo", "v1.0", []byte("xxx"))
 	assert.Nil(t, err)

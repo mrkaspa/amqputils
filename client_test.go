@@ -13,8 +13,8 @@ func TestPublish(t *testing.T) {
 	assert.NoError(t, err)
 	q, err := CreateQueue(ch, "demo")
 	assert.NoError(t, err)
-	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
-		return nil
+	go Subscribe(ch, q, func(d amqp.Delivery) ([]byte, error) {
+		return nil, nil
 	})
 	err = Publish("amqp://guest:guest@localhost", "demo", "v1.0", []byte("xxx"))
 	assert.NoError(t, err)
@@ -27,8 +27,8 @@ func TestCall(t *testing.T) {
 	q, err := CreateQueue(ch, "echo")
 	assert.NoError(t, err)
 	msg := []byte("xxx")
-	go Subscribe(ch, q, func(d amqp.Delivery) []byte {
-		return d.Body
+	go Subscribe(ch, q, func(d amqp.Delivery) ([]byte, error) {
+		return d.Body, nil
 	})
 	resp, err := Call("amqp://guest:guest@localhost", "echo", "v1.0", msg)
 	assert.NoError(t, err)
