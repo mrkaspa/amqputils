@@ -1,7 +1,7 @@
 package amqputils
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/streadway/amqp"
 )
@@ -80,7 +80,7 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 		msg, err := do(d)
 
 		if err != nil {
-			fmt.Printf("AMQPUTILS, an error has occurred: %v", err.Error())
+			log.Printf("AMQPUTILS, an error has occurred: %v", err.Error())
 			continue
 		}
 
