@@ -1,7 +1,6 @@
 package amqputils
 
 import (
-	"log"
 	"testing"
 
 	"github.com/streadway/amqp"
@@ -15,16 +14,9 @@ func createServerTest(queue string, response []byte) (*Server, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	server, err := NewServer("v1.0", ch, queue,
+	server, err := NewServer(ch, queue,
 		func(d amqp.Delivery) ([]byte, error) {
 			return response, nil
-		},
-		func(v1, v2 string) (bool, []byte) {
-			if v1 != v2 {
-				log.Printf("Version error. Expecting %s, received %s", v1, v2)
-				return false, []byte("{\"error\":\"invalid message version, expecting " + v1 + "\"}")
-			}
-			return true, nil
 		})
 
 	if err != nil {
@@ -46,7 +38,7 @@ func TestServer_Start(t *testing.T) {
 	server, close, _ := createServerTest("demo", msg)
 	defer close()
 	go server.Start()
-	resp, err := Call(connString, server.Event, "v1.0", msg)
+	resp, err := Call(connString, server.Event, msg)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
@@ -55,6 +47,6 @@ func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
 	server, close, _ := createServerTest("demo", nil)
 	defer close()
 	go server.Start()
-	_, err := Call(connString, server.Event, "v1.0", []byte("xxx"))
+	_, err := Call(connString, server.Event, []byte("xxx"))
 	assert.NotNil(t, err)
 }

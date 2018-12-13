@@ -4,31 +4,25 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type cmpFunc = func(string, string) (bool, []byte)
-
 // Server for receiving amqp messages
 type Server struct {
-	Version        string
-	Event          string
-	Do             SubscribeFunc
-	AMQPChan       *amqp.Channel
-	AMQPQueue      *amqp.Queue
-	CompareVersion cmpFunc
+	Event     string
+	Do        SubscribeFunc
+	AMQPChan  *amqp.Channel
+	AMQPQueue *amqp.Queue
 }
 
 // NewServer creates one
-func NewServer(version string, ch *amqp.Channel, event string, do SubscribeFunc, cFun cmpFunc) (*Server, error) {
+func NewServer(ch *amqp.Channel, event string, do SubscribeFunc) (*Server, error) {
 	q, err := CreateQueue(ch, event)
 	if err != nil {
 		return nil, err
 	}
 	return &Server{
-		Version:        version,
-		Event:          event,
-		Do:             do,
-		AMQPChan:       ch,
-		AMQPQueue:      q,
-		CompareVersion: cFun,
+		Event:     event,
+		Do:        do,
+		AMQPChan:  ch,
+		AMQPQueue: q,
 	}, nil
 }
 
@@ -43,19 +37,14 @@ func HealtCheck(ch *amqp.Channel, queueService string) (*Server, error) {
 		Do: func(m amqp.Delivery) ([]byte, error) {
 			return []byte(queueService + " active "), nil
 		},
-		AMQPChan:       ch,
-		AMQPQueue:      q,
-		CompareVersion: func(a, b string) (bool, []byte) { return true, nil },
+		AMQPChan:  ch,
+		AMQPQueue: q,
 	}, nil
 }
 
 // Start the server
 func (s *Server) Start() {
 	f := func(delivery amqp.Delivery) ([]byte, error) {
-		if ok, data := s.CompareVersion(s.Version, delivery.AppId); !ok {
-			return data, nil
-		}
-
 		return s.Do(delivery)
 	}
 	Subscribe(s.AMQPChan, s.AMQPQueue, f)

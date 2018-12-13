@@ -1,7 +1,6 @@
 package amqputils
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -9,19 +8,19 @@ import (
 )
 
 // Call a queue and receives the response
-func Call(url, queueName string, msgVer string, info []byte) ([]byte, error) {
+func Call(url, queueName string, info []byte) ([]byte, error) {
 	ch, close, err := CreateChannelConnection(url)
 	if err != nil {
 		return nil, err
 	}
 	defer close()
-	return CallWithConn(ch, queueName, msgVer, info)
+	return CallWithConn(ch, queueName, info)
 }
 
 // CallWithConn a queue and receives the response
-func CallWithConn(ch *amqp.Channel, queueName string, msgVer string, info []byte) ([]byte, error) {
+func CallWithConn(ch *amqp.Channel, queueName string, info []byte) ([]byte, error) {
 	resp := make(chan []byte)
-	CallWithConnAsync(ch, queueName, msgVer, info, resp)
+	CallWithConnAsync(ch, queueName, info, resp)
 
 	select {
 	case data := <-resp:
@@ -32,8 +31,8 @@ func CallWithConn(ch *amqp.Channel, queueName string, msgVer string, info []byte
 }
 
 // CallWithConnAsync a queue and receives the response in a channel
-func CallWithConnAsync(ch *amqp.Channel, queueName string, msgVer string, info []byte, resp chan []byte) error {
-	qRec, corrID, err := call(ch, queueName, msgVer, info)
+func CallWithConnAsync(ch *amqp.Channel, queueName string, info []byte, resp chan []byte) error {
+	qRec, corrID, err := call(ch, queueName, info)
 	if err != nil {
 		return err
 	}
@@ -48,7 +47,7 @@ func CallWithConnAsync(ch *amqp.Channel, queueName string, msgVer string, info [
 	return nil
 }
 
-func call(ch *amqp.Channel, queueName string, msgVer string, info []byte) (*amqp.Queue, string, error) {
+func call(ch *amqp.Channel, queueName string, info []byte) (*amqp.Queue, string, error) {
 	q, err := CreateQueue(ch, queueName)
 	if err != nil {
 		return nil, "", err
@@ -68,7 +67,6 @@ func call(ch *amqp.Channel, queueName string, msgVer string, info []byte) (*amqp
 	}
 
 	corrID := randomString(32)
-	fmt.Printf("Version in %s\n", msgVer)
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -79,7 +77,6 @@ func call(ch *amqp.Channel, queueName string, msgVer string, info []byte) (*amqp
 			ContentType:   "application/json",
 			CorrelationId: corrID,
 			ReplyTo:       qRec.Name,
-			AppId:         msgVer,
 			Body:          info,
 		})
 	if err != nil {
@@ -89,17 +86,17 @@ func call(ch *amqp.Channel, queueName string, msgVer string, info []byte) (*amqp
 }
 
 // Publish in a queue
-func Publish(url, queueName string, msgVer string, info []byte) error {
+func Publish(url, queueName string, info []byte) error {
 	ch, close, err := CreateChannelConnection(url)
 	if err != nil {
 		return err
 	}
 	defer close()
-	return PublishWithConn(ch, queueName, msgVer, info)
+	return PublishWithConn(ch, queueName, info)
 }
 
 // PublishWithConn in a queue
-func PublishWithConn(ch *amqp.Channel, queueName string, msgVer string, info []byte) error {
+func PublishWithConn(ch *amqp.Channel, queueName string, info []byte) error {
 	q, err := CreateQueue(ch, queueName)
 	if err != nil {
 		return err
@@ -114,7 +111,6 @@ func PublishWithConn(ch *amqp.Channel, queueName string, msgVer string, info []b
 			DeliveryMode: amqp.Persistent,
 			ContentType:  "application/json",
 			Body:         info,
-			AppId:        msgVer,
 		})
 	if err != nil {
 		return err
