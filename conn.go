@@ -3,6 +3,7 @@ package amqputils
 import (
 	"log"
 
+	"github.com/Jeffail/tunny"
 	"github.com/streadway/amqp"
 )
 
@@ -39,7 +40,7 @@ func CreateQueue(ch *amqp.Channel, queueName string) (*amqp.Queue, error) {
 	return declareQueue(ch, queueName, true)
 }
 
-// CreateQueue in the amqp server not durable
+// CreateQueueNotDurable in the amqp server not durable
 func CreateQueueNotDurable(ch *amqp.Channel, queueName string) (*amqp.Queue, error) {
 	return declareQueue(ch, queueName, false)
 }
@@ -62,7 +63,7 @@ func declareQueue(ch *amqp.Channel, queueName string, durable bool) (*amqp.Queue
 }
 
 // Subscribe to a queue and handle the messages
-func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
+func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc, poolConSize int) error {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
@@ -72,33 +73,57 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc) error {
 		false,  // no-wait
 		nil,    // args
 	)
+
 	if err != nil {
 		return err
 	}
 
+	pool := createPool(poolConSize)
+
+	defer pool.Close()
+
 	for d := range msgs {
-		msg, err := do(d)
-
-		if err != nil {
-			log.Printf("AMQPUTILS, an error has occurred: %v", err.Error())
-			continue
-		}
-
-		d.Ack(false)
-
-		if msg != nil && d.ReplyTo != "" && d.CorrelationId != "" {
-			ch.Publish(
-				"",        // exchange
-				d.ReplyTo, // routing key
-				false,     // mandatory
-				false,     // immediate
-				amqp.Publishing{
-					ContentType:   "application/json",
-					CorrelationId: d.CorrelationId,
-					Body:          msg,
-					AppId:         d.AppId,
-				})
-		}
+		pool.Process(TunnyIntefaceStruct{Do: do, AMQPChan: ch, Delivery: d})
 	}
 	return nil
+}
+
+//TunnyIntefaceStruct pool args
+type TunnyIntefaceStruct struct {
+	Do       SubscribeFunc
+	AMQPChan *amqp.Channel
+	Delivery amqp.Delivery
+}
+
+func createPool(poolConSize int) *tunny.Pool {
+	return tunny.NewFunc(poolConSize, func(in interface{}) interface{} {
+		args, ok := in.(TunnyIntefaceStruct)
+		if !ok {
+			log.Printf("Error parsing interface to TunnyIntefaceStruct")
+			return nil
+		}
+
+		msg, err := args.Do(args.Delivery)
+		if err != nil {
+			log.Printf("AMQPUTILS, an error has occurred: %v", err.Error())
+			return nil
+		}
+
+		args.Delivery.Ack(false)
+
+		if msg != nil && args.Delivery.ReplyTo != "" && args.Delivery.CorrelationId != "" {
+			args.AMQPChan.Publish(
+				"",                    // exchange
+				args.Delivery.ReplyTo, // routing key
+				false,                 // mandatory
+				false,                 // immediate
+				amqp.Publishing{
+					ContentType:   "application/json",
+					CorrelationId: args.Delivery.CorrelationId,
+					Body:          msg,
+					AppId:         args.Delivery.AppId,
+				})
+		}
+		return nil
+	})
 }

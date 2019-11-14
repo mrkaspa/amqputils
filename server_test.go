@@ -17,7 +17,7 @@ func createServerTest(queue string, response []byte) (*Server, func(), error) {
 	server, err := NewServer(ch, queue,
 		func(d amqp.Delivery) ([]byte, error) {
 			return response, nil
-		})
+		}, 1)
 
 	if err != nil {
 		return nil, nil, err
@@ -38,7 +38,7 @@ func TestServer_Start(t *testing.T) {
 	server, close, _ := createServerTest("demo", msg)
 	defer close()
 	go server.Start()
-	resp, err := Call(connString, server.Event, msg)
+	resp, err := Call(connString, server.Event, msg, server.PoolSize)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
@@ -47,6 +47,6 @@ func TestServer_DoesntRespondWhenReturnNil(t *testing.T) {
 	server, close, _ := createServerTest("demo", nil)
 	defer close()
 	go server.Start()
-	_, err := Call(connString, server.Event, []byte("xxx"))
+	_, err := Call(connString, server.Event, []byte("xxx"), server.PoolSize)
 	assert.NotNil(t, err)
 }

@@ -10,10 +10,11 @@ type Server struct {
 	Do        SubscribeFunc
 	AMQPChan  *amqp.Channel
 	AMQPQueue *amqp.Queue
+	PoolSize  int
 }
 
 // NewServer creates one
-func NewServer(ch *amqp.Channel, event string, do SubscribeFunc) (*Server, error) {
+func NewServer(ch *amqp.Channel, event string, do SubscribeFunc, poolSize int) (*Server, error) {
 	q, err := CreateQueue(ch, event)
 	if err != nil {
 		return nil, err
@@ -23,6 +24,7 @@ func NewServer(ch *amqp.Channel, event string, do SubscribeFunc) (*Server, error
 		Do:        do,
 		AMQPChan:  ch,
 		AMQPQueue: q,
+		PoolSize:  poolSize,
 	}, nil
 }
 
@@ -47,5 +49,5 @@ func (s *Server) Start() {
 	f := func(delivery amqp.Delivery) ([]byte, error) {
 		return s.Do(delivery)
 	}
-	Subscribe(s.AMQPChan, s.AMQPQueue, f)
+	Subscribe(s.AMQPChan, s.AMQPQueue, f, s.PoolSize)
 }
