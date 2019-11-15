@@ -8,19 +8,19 @@ import (
 )
 
 // Call a queue and receives the response
-func Call(url, queueName string, info []byte) ([]byte, error) {
+func Call(url, queueName string, info []byte, poolSize int) ([]byte, error) {
 	ch, close, err := CreateChannelConnection(url)
 	if err != nil {
 		return nil, err
 	}
 	defer close()
-	return CallWithConn(ch, queueName, info)
+	return CallWithConn(ch, queueName, info, poolSize)
 }
 
 // CallWithConn a queue and receives the response
-func CallWithConn(ch *amqp.Channel, queueName string, info []byte) ([]byte, error) {
+func CallWithConn(ch *amqp.Channel, queueName string, info []byte, poolSize int) ([]byte, error) {
 	resp := make(chan []byte)
-	CallWithConnAsync(ch, queueName, info, resp)
+	CallWithConnAsync(ch, queueName, info, resp, poolSize)
 
 	select {
 	case data := <-resp:
@@ -31,7 +31,7 @@ func CallWithConn(ch *amqp.Channel, queueName string, info []byte) ([]byte, erro
 }
 
 // CallWithConnAsync a queue and receives the response in a channel
-func CallWithConnAsync(ch *amqp.Channel, queueName string, info []byte, resp chan []byte) error {
+func CallWithConnAsync(ch *amqp.Channel, queueName string, info []byte, resp chan []byte, poolSize int) error {
 	qRec, corrID, err := call(ch, queueName, info)
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func CallWithConnAsync(ch *amqp.Channel, queueName string, info []byte, resp cha
 			resp <- d.Body
 		}
 		return nil, nil
-	})
+	}, poolSize)
 
 	return nil
 }

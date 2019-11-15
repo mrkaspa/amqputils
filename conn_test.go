@@ -32,7 +32,7 @@ func TestSubscribe(t *testing.T) {
 	go Subscribe(ch, q, func(d amqp.Delivery) ([]byte, error) {
 		resp <- d.Body
 		return nil, nil
-	})
+	}, 1)
 	err := Publish("amqp://guest:guest@localhost", "demo", []byte("xxx"))
 	assert.Nil(t, err)
 	assert.NotNil(t, <-resp)
