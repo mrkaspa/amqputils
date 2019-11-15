@@ -83,13 +83,13 @@ func Subscribe(ch *amqp.Channel, q *amqp.Queue, do SubscribeFunc, poolConSize in
 	defer pool.Close()
 
 	for d := range msgs {
-		pool.Process(TunnyIntefaceStruct{Do: do, AMQPChan: ch, Delivery: d})
+		pool.Process(TunnyExecutor{Do: do, AMQPChan: ch, Delivery: d})
 	}
 	return nil
 }
 
-//TunnyIntefaceStruct pool args
-type TunnyIntefaceStruct struct {
+//TunnyExecutor pool args
+type TunnyExecutor struct {
 	Do       SubscribeFunc
 	AMQPChan *amqp.Channel
 	Delivery amqp.Delivery
@@ -97,7 +97,7 @@ type TunnyIntefaceStruct struct {
 
 func createPool(poolConSize int) *tunny.Pool {
 	return tunny.NewFunc(poolConSize, func(in interface{}) interface{} {
-		args, ok := in.(TunnyIntefaceStruct)
+		args, ok := in.(TunnyExecutor)
 		if !ok {
 			log.Printf("Error parsing interface to TunnyIntefaceStruct")
 			return nil
